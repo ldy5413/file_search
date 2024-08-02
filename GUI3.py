@@ -4,7 +4,8 @@ import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 import webbrowser
 from collections import Counter
-
+from threading import Thread
+from create_db import choose_directory
 def search_files(keywords):
     conn = sqlite3.connect('file_index.db')
     c = conn.cursor()
@@ -29,12 +30,35 @@ def index_files(directory):
     conn.commit()
     conn.close()
 
-def choose_directory():
-    root = tk.Tk()
-    root.withdraw()  # 隐藏主窗口
-    directory = filedialog.askdirectory(title="Choose Directory to Index")
-    if directory:
-        index_files(directory)
+def update_database():
+    conn = sqlite3.connect('file_index.db')
+    c = conn.cursor()
+    
+    # 获取当前数据库中的文件路径
+    c.execute('SELECT path FROM files')
+    db_files = set(row[0] for row in c.fetchall())
+    
+    # 遍历C盘并更新数据库
+    c_drive_files = set()
+    for root, dirs, files in os.walk('C:\\'):
+        for dir_name in dirs:
+            dir_path = os.path.join(root, dir_name)
+            c_drive_files.add(dir_path)
+            if dir_path not in db_files:
+                c.execute('INSERT OR IGNORE INTO files (path, name, type) VALUES (?, ?, ?)', (dir_path, dir_name, 'directory'))
+        for file in files:
+            file_path = os.path.join(root, file)
+            c_drive_files.add(file_path)
+            if file_path not in db_files:
+                c.execute('INSERT OR IGNORE INTO files (path, name, type) VALUES (?, ?, ?)', (file_path, file, 'file'))
+    
+    # 删除数据库中不存在于C盘中的文件路径
+    for file_path in db_files:
+        if file_path not in c_drive_files:
+            c.execute('DELETE FROM files WHERE path = ?', (file_path,))
+    
+    conn.commit()
+    conn.close()
 
 class FileSearchApp:
     def __init__(self, root):
@@ -44,6 +68,10 @@ class FileSearchApp:
         if not os.path.exists('file_index.db'):
             messagebox.showinfo("Indexing", "Please choose a directory to index.")
             choose_directory()
+
+        # 启动时后台更新数据库
+        update_thread = Thread(target=update_database)
+        update_thread.start()
 
         self.search_label = ttk.Label(root, text="Search:")
         self.search_label.grid(row=0, column=1, padx=10, pady=10, sticky='w')
@@ -95,6 +123,7 @@ class FileSearchApp:
         # 添加窗口大小变化事件
         root.grid_rowconfigure(1, weight=1)
         root.grid_columnconfigure(2, weight=1)
+
 
     def perform_search(self):
         keyword = self.search_entry.get()
@@ -172,6 +201,8 @@ class FileSearchApp:
             if not os.path.isdir(file_path):
                 directory = os.path.dirname(file_path)
                 webbrowser.open(directory)
+
+
 
 # 运行应用程序
 root = tk.Tk()
