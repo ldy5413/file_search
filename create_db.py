@@ -1,16 +1,13 @@
 import os
 import sqlite3
+import tkinter as tk
+from tkinter import filedialog
 
-# 创建数据库连接和游标
-conn = sqlite3.connect('file_index.db')
-c = conn.cursor()
-
-# 创建文件索引表
-c.execute('''CREATE TABLE IF NOT EXISTS files
-             (path TEXT PRIMARY KEY, name TEXT, type TEXT)''')
-
-# 遍历目录并索引文件
 def index_files(directory):
+    conn = sqlite3.connect('file_index.db')
+    c = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS files
+                 (path TEXT PRIMARY KEY, name TEXT, type TEXT)''')
     for root, dirs, files in os.walk(directory):
         for dir_name in dirs:
             dir_path = os.path.join(root, dir_name)
@@ -19,9 +16,14 @@ def index_files(directory):
             file_path = os.path.join(root, file)
             c.execute('INSERT OR IGNORE INTO files (path, name, type) VALUES (?, ?, ?)', (file_path, file, 'file'))
     conn.commit()
+    conn.close()
 
-# 例如索引 C: 盘
-index_files('C:\\')
+def choose_directory():
+    root = tk.Tk()
+    root.withdraw()  # 隐藏主窗口
+    directory = filedialog.askdirectory(title="Choose Directory to Index")
+    if directory:
+        index_files(directory)
 
-# 关闭数据库连接
-conn.close()
+if __name__ == "__main__":
+    choose_directory()
