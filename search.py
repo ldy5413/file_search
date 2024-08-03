@@ -3,7 +3,7 @@ import sqlite3
 def search_files(keywords):
     conn = sqlite3.connect('file_index.db')
     c = conn.cursor()
-    query = f"SELECT path, type FROM files WHERE name LIKE ?"
+    query = "SELECT path, type FROM files WHERE " + " AND ".join(["path LIKE ?"] * len(keywords))
     c.execute(query, tuple('%' + keyword + '%' for keyword in keywords))
     results = c.fetchall()
     conn.close()

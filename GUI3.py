@@ -160,6 +160,8 @@ class FileSearchApp:
             if not os.path.isdir(file_path):
                 directory = os.path.dirname(file_path)
                 webbrowser.open(directory)
+            else:
+                webbrowser.open(file_path)
 
     def on_closing(self):
         self.stop_event.set()  # 设置事件来停止监控线程
