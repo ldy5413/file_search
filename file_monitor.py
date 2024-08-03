@@ -5,7 +5,7 @@ from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
 # 定义需要忽略的文件名或路径特征
-IGNORE_PATTERNS = ['file_index.db-journal', '.tmp','.TMP','C:\Windows','C:\PerfLogs','C:\ProgramData', 'AppData\Local','AppData\Roaming','.continue','.git']
+IGNORE_PATTERNS = ['file_index.db-journal', '.tmp','.TMP','C:\Windows','C:\PerfLogs','C:\ProgramData', 'AppData\Local','AppData\Roaming','.continue','.git','$Recycle.Bin']
 
 def update_file_in_db(file_path):
     conn = sqlite3.connect('file_index.db')
@@ -56,7 +56,7 @@ class FileEventHandler(FileSystemEventHandler):
         update_file_in_db(event.dest_path)
         time.sleep(0.1)  # 添加短暂的延迟
 
-def start_monitoring(directory_to_watch, poll_interval=1.0):
+def start_monitoring(directory_to_watch, poll_interval=5.0):
     event_handler = FileEventHandler()
     observer = Observer(timeout=poll_interval)  # 设置轮询间隔时间
     observer.schedule(event_handler, directory_to_watch, recursive=True)
