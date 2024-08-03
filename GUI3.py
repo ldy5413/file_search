@@ -4,7 +4,7 @@ import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 import webbrowser
 from collections import Counter
-from threading import Thread
+from threading import Thread, Event
 from create_db import choose_directory, update_database
 from search import search_files
 from file_monitor import start_monitoring
@@ -12,10 +12,10 @@ from file_monitor import start_monitoring
 
 
 class FileSearchApp:
-    def __init__(self, root):
+    def __init__(self, root, stop_event):
         self.root = root
         self.root.title("File Search")
-
+        self.stop_event = stop_event
         if not os.path.exists('file_index.db'):
             messagebox.showinfo("Indexing", "Please choose a directory to index.")
             choose_directory()
@@ -81,8 +81,10 @@ class FileSearchApp:
         root.grid_rowconfigure(1, weight=1)
         root.grid_columnconfigure(2, weight=1)
 
+        self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
+
     def update_database_wrapper(self):
-        update_database(self.status_label)
+        update_database(self.status_label, self.stop_event)
 
     def perform_search(self):
         keyword = self.search_entry.get()
@@ -159,11 +161,15 @@ class FileSearchApp:
                 directory = os.path.dirname(file_path)
                 webbrowser.open(directory)
 
+    def on_closing(self):
+        self.stop_event.set()  # 设置事件来停止监控线程
+        self.root.destroy()
 
 if __name__ == "__main__":
+    stop_event = Event()
     root = tk.Tk()
-    app = FileSearchApp(root)
-    monitor_thread = Thread(target=start_monitoring,args=['C:\\'])
+    app = FileSearchApp(root, stop_event)
+    monitor_thread = Thread(target=start_monitoring,args=('C:\\', stop_event))
     monitor_thread.start()
     root.mainloop()
-
+    monitor_thread.join()

@@ -26,7 +26,7 @@ def choose_directory():
         index_files(directory)
 
 
-def update_database(status_label):
+def update_database(status_label,stop_event):
     start_time = time.time()
     status_label.config(text="Start indexing...")
     status_label.update_idletasks()
@@ -41,12 +41,18 @@ def update_database(status_label):
     # 遍历C盘并更新数据库
     c_drive_files = set()
     for root, dirs, files in os.walk('C:\\'):
+        if stop_event.is_set():
+            break
         for dir_name in dirs:
+            if stop_event.is_set():
+                break
             dir_path = os.path.join(root, dir_name)
             c_drive_files.add(dir_path)
             if dir_path not in db_files:
                 c.execute('INSERT OR IGNORE INTO files (path, name, type) VALUES (?, ?, ?)', (dir_path, dir_name, 'directory'))
         for file in files:
+            if stop_event.is_set():
+                break
             file_path = os.path.join(root, file)
             c_drive_files.add(file_path)
             if file_path not in db_files:
@@ -54,12 +60,16 @@ def update_database(status_label):
     
     # 删除数据库中不存在于C盘中的文件路径
     for file_path in db_files:
+        if stop_event.is_set():
+            break
         if file_path not in c_drive_files:
             c.execute('DELETE FROM files WHERE path = ?', (file_path,))
     
     conn.commit()
     conn.close()
-
+    if stop_event.is_set():
+        print('stop updating database due to window close')
+        return
     end_time = time.time()
     elapsed_time = end_time - start_time
     status_label.config(text=f"Indexed within {elapsed_time:.2f} seconds.")

@@ -56,19 +56,23 @@ class FileEventHandler(FileSystemEventHandler):
         update_file_in_db(event.dest_path)
         time.sleep(0.1)  # 添加短暂的延迟
 
-def start_monitoring(directory_to_watch, poll_interval=5.0):
+def start_monitoring(directory_to_watch, stop_event,poll_interval=5.0):
     event_handler = FileEventHandler()
     observer = Observer(timeout=poll_interval)  # 设置轮询间隔时间
     observer.schedule(event_handler, directory_to_watch, recursive=True)
     observer.start()
     print(f"Started monitoring {directory_to_watch} with poll interval {poll_interval}s")
     try:
-        while True:
+        while not stop_event.is_set():
             time.sleep(1)  # 主线程添加延迟，降低 CPU 占用
     except KeyboardInterrupt:
         observer.stop()
+    observer.stop()
     observer.join()
+    print(f"Stopped monitoring {directory_to_watch}")
 
 if __name__ == "__main__":
+    from threading import Event
+    stop_event = Event()
     directory_to_watch = "C:\\"  # Change this to the directory you want to watch
-    start_monitoring(directory_to_watch, poll_interval=5.0)  # 可以调整轮询间隔时间以减少 CPU 占用
+    start_monitoring(directory_to_watch, stop_event, poll_interval=5.0)  # 可以调整轮询间隔时间以减少 CPU 占用
