@@ -2,7 +2,9 @@
 __pycache__/
 *.py[cod]
 *$py.class
-
+file_index.db
+GUI2.py
+GUI.py
 # C extensions
 *.so
 
