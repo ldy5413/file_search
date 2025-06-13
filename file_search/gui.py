@@ -5,9 +5,9 @@ from tkinter import ttk, filedialog, messagebox
 import webbrowser
 from collections import Counter
 from threading import Thread, Event
-from create_db import choose_directory, update_database
-from search import search_files
-from file_monitor import start_monitoring
+from .database import choose_directory, update_database
+from .search import search_files
+from .monitor import start_monitoring
 
 
 
